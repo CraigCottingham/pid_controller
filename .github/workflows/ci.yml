@@ -3,14 +3,15 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: check out code
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.ref }}
+        uses: actions/checkout@v4
 
       - name: install elixir and erlang
         uses: erlef/setup-beam@v1
@@ -22,6 +23,16 @@ jobs:
         run: |
           mix local.hex --force
           mix local.rebar --force
+
+      - name: restore mix cache, if possible
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
 
       - name: install dependencies
         run: |
@@ -39,40 +50,55 @@ jobs:
       matrix:
         include:
           - elixir-version: "1.9.4-otp-22"
-            otp-version: "22.3.4.26"
+            otp-version: "22.3.4.27"
           - elixir-version: "1.10.4-otp-22"
-            otp-version: "22.3.4.26"
+            otp-version: "22.3.4.27"
           - elixir-version: "1.10.4-otp-23"
-            otp-version: "23.3.4.18"
+            otp-version: "23.3.4.20"
           - elixir-version: "1.11.4-otp-22"
-            otp-version: "22.3.4.26"
+            otp-version: "22.3.4.27"
           - elixir-version: "1.11.4-otp-23"
-            otp-version: "23.3.4.18"
+            otp-version: "23.3.4.20"
           - elixir-version: "1.11.4-otp-24"
-            otp-version: "24.3.4.11"
+            otp-version: "24.3.4.16"
           - elixir-version: "1.12.3-otp-22"
-            otp-version: "22.3.4.26"
+            otp-version: "22.3.4.27"
           - elixir-version: "1.12.3-otp-23"
-            otp-version: "23.3.4.18"
+            otp-version: "23.3.4.20"
           - elixir-version: "1.12.3-otp-24"
-            otp-version: "24.3.4.11"
+            otp-version: "24.3.4.16"
           - elixir-version: "1.13.4-otp-22"
-            otp-version: "22.3.4.26"
+            otp-version: "22.3.4.27"
           - elixir-version: "1.13.4-otp-23"
-            otp-version: "23.3.4.18"
+            otp-version: "23.3.4.20"
           - elixir-version: "1.13.4-otp-24"
-            otp-version: "24.3.4.11"
+            otp-version: "24.3.4.16"
           - elixir-version: "1.13.4-otp-25"
-            otp-version: "25.3.2"
-          - elixir-version: "1.14.4-otp-23"
-            otp-version: "23.3.4.18"
-          - elixir-version: "1.14.4-otp-24"
-            otp-version: "24.3.4.11"
+            otp-version: "25.3.2.10"
+          - elixir-version: "1.14.5-otp-23"
+            otp-version: "23.3.4.20"
+          - elixir-version: "1.14.5-otp-24"
+            otp-version: "24.3.4.16"
+          - elixir-version: "1.14.5-otp-25"
+            otp-version: "25.3.2.10"
+          - elixir-version: "1.14.5-otp-26"
+            otp-version: "26.2.3"
+          - elixir-version: "1.15.7-otp-24"
+            otp-version: "24.3.4.16"
+          - elixir-version: "1.15.7-otp-25"
+            otp-version: "25.3.2.10"
+          - elixir-version: "1.15.7-otp-26"
+            otp-version: "26.2.3"
+          # - elixir-version: "1.16.2-otp-24"
+          #   otp-version: "24.3.4.16"
+          # - elixir-version: "1.16.2-otp-25"
+          #   otp-version: "25.3.2.10"
+          # - elixir-version: "1.16.2-otp-26"
+          #   otp-version: "26.2.3"
+
     steps:
       - name: check out code
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.ref }}
+        uses: actions/checkout@v4
 
       - name: install elixir and erlang
         uses: erlef/setup-beam@v1
@@ -86,6 +112,16 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
+      - name: restore mix cache, if possible
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+  
       - name: install dependencies
         run: |
           mix deps.get
@@ -96,15 +132,13 @@ jobs:
 
       - name: run unit tests
         run: |
-          mix test
+          mix ci_test
 
   credo:
     runs-on: ubuntu-latest
     steps:
       - name: check out code
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.ref }}
+        uses: actions/checkout@v4
 
       - name: install elixir and erlang
         uses: erlef/setup-beam@v1
@@ -117,6 +151,16 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
+      - name: restore mix cache, if possible
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+  
       - name: install dependencies
         run: |
           mix deps.get
@@ -129,9 +173,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check out code
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.ref }}
+        uses: actions/checkout@v4
 
       - name: install elixir and erlang
         uses: erlef/setup-beam@v1
@@ -144,6 +186,16 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
+      - name: restore mix cache, if possible
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+  
       - name: install dependencies
         run: |
           mix deps.get
@@ -156,9 +208,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check out code
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.ref }}
+        uses: actions/checkout@v4
 
       - name: install elixir and erlang
         uses: erlef/setup-beam@v1
@@ -171,6 +221,16 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
+      - name: restore mix cache, if possible
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+  
       - name: install dependencies
         run: |
           mix deps.get
